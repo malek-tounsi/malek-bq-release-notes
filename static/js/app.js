@@ -8,6 +8,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // DOM Elements
     const refreshBtn = document.getElementById('refresh-btn');
     const refreshIcon = document.getElementById('refresh-icon');
+    const exportCsvBtn = document.getElementById('export-csv-btn');
     const lastUpdatedText = document.getElementById('last-updated-text');
     const searchInput = document.getElementById('search-input');
     const clearSearchBtn = document.getElementById('clear-search-btn');
@@ -46,6 +47,13 @@ document.addEventListener('DOMContentLoaded', () => {
             allNotes = data.notes;
             lastUpdatedText.textContent = `Updated: ${data.last_fetched}`;
             
+            // Show/hide Export CSV button based on data availability
+            if (allNotes && allNotes.length > 0) {
+                exportCsvBtn.style.display = 'inline-flex';
+            } else {
+                exportCsvBtn.style.display = 'none';
+            }
+
             // Success toast if manual refresh
             if (forceRefresh) {
                 showToast('Release notes successfully updated!', 'success');
@@ -65,6 +73,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (isLoading) {
             refreshIcon.classList.add('spin');
             refreshBtn.disabled = true;
+            exportCsvBtn.disabled = true;
             const statusDot = document.querySelector('.status-dot');
             statusDot.classList.add('syncing');
             
@@ -74,6 +83,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             refreshIcon.classList.remove('spin');
             refreshBtn.disabled = false;
+            exportCsvBtn.disabled = false;
             const statusDot = document.querySelector('.status-dot');
             statusDot.classList.remove('syncing');
             
@@ -84,12 +94,8 @@ document.addEventListener('DOMContentLoaded', () => {
     /* ==========================================================================
        RENDERING & FILTERING
        ========================================================================== */
-    function renderNotes() {
-        // Clear grid
-        notesGrid.innerHTML = '';
-
-        // Apply filters
-        const filteredNotes = allNotes.filter(note => {
+    function getFilteredNotes() {
+        return allNotes.filter(note => {
             // Category Filter
             const typeMatch = activeFilter === 'all' || note.type === activeFilter;
             
@@ -102,6 +108,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 
             return typeMatch && searchMatch;
         });
+    }
+
+    function renderNotes() {
+        // Clear grid
+        notesGrid.innerHTML = '';
+
+        const filteredNotes = getFilteredNotes();
 
         // Toggle empty state or grid display
         if (filteredNotes.length === 0) {
@@ -145,7 +158,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Attach Event Listeners to actions
             card.querySelector('.btn-copy-action').addEventListener('click', () => {
-                copyTextToClipboard(note.text);
+                const formattedText = `[BigQuery Release Note - ${note.date}]\nType: ${safeType}\n\nDescription: ${note.text}\n\nFull details: ${note.link}`;
+                copyTextToClipboard(formattedText);
             });
 
             card.querySelector('.btn-tweet-action').addEventListener('click', () => {
@@ -217,8 +231,48 @@ document.addEventListener('DOMContentLoaded', () => {
     /* ==========================================================================
        EVENT LISTENERS & UTILITIES
        ========================================================================== */
-    // Refresh buttons
+    // Export CSV and Refresh buttons
+    exportCsvBtn.addEventListener('click', exportToCSV);
     refreshBtn.addEventListener('click', () => fetchReleaseNotes(true));
+
+    function exportToCSV() {
+        const filteredNotes = getFilteredNotes();
+        if (filteredNotes.length === 0) {
+            showToast('No notes matching current filters to export.', 'error');
+            return;
+        }
+
+        const headers = ['Date', 'Type', 'Description', 'Link'];
+        
+        function escapeCSVCell(value) {
+            if (value === null || value === undefined) return '';
+            const stringValue = String(value);
+            return '"' + stringValue.replace(/"/g, '""') + '"';
+        }
+
+        const csvRows = [headers.map(escapeCSVCell).join(',')];
+
+        filteredNotes.forEach(note => {
+            const row = [note.date, note.type, note.text, note.link];
+            csvRows.push(row.map(escapeCSVCell).join(','));
+        });
+
+        const csvString = csvRows.join('\r\n');
+        const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement("a");
+        const url = URL.createObjectURL(blob);
+        link.setAttribute("href", url);
+        
+        const dateStr = new Date().toISOString().slice(0, 10);
+        const category = activeFilter === 'all' ? 'all' : activeFilter.toLowerCase();
+        link.setAttribute("download", `bigquery_releases_${category}_${dateStr}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        showToast(`Exported ${filteredNotes.length} notes to CSV!`, 'success');
+    }
     
     // Search input handlers
     searchInput.addEventListener('input', (e) => {
