@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BigQuery Release Pulse</title>
+    <meta name="description" content="A beautiful portal to track and share the latest Google Cloud BigQuery release notes and updates.">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <!-- Background Gradients for Glassmorphism depth -->
+    <div class="bg-glow-1"></div>
+    <div class="bg-glow-2"></div>
+
+    <div class="app-container">
+        <!-- Navigation Header -->
+        <header class="app-header" id="header">
+            <div class="header-left">
+                <div class="logo-container">
+                    <div class="logo-icon">
+                        <i class="fa-solid fa-bolt"></i>
+                    </div>
+                    <div>
+                        <h1 class="logo-title">BigQuery <span>Release Pulse</span></h1>
+                        <p class="logo-subtitle">Real-time Google Cloud BigQuery Updates</p>
+                    </div>
+                </div>
+            </div>
+            <div class="header-right">
+                <div class="status-indicator">
+                    <span class="status-dot"></span>
+                    <span id="last-updated-text">Checking for updates...</span>
+                </div>
+                <button id="refresh-btn" class="btn btn-primary" title="Refresh Release Notes">
+                    <i class="fa-solid fa-arrows-rotate" id="refresh-icon"></i>
+                    <span>Refresh</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- Search and Filters Section -->
+        <section class="controls-section">
+            <div class="search-box-wrapper">
+                <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                <input type="text" id="search-input" placeholder="Search updates, features, keywords..." aria-label="Search release notes">
+                <button id="clear-search-btn" class="clear-search-btn" title="Clear Search" style="display: none;">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div class="filter-pills" id="filter-container">
+                <button class="filter-pill active" data-type="all">All Updates</button>
+                <button class="filter-pill" data-type="Feature">Features</button>
+                <button class="filter-pill" data-type="Change">Changes</button>
+                <button class="filter-pill" data-type="Announcement">Announcements</button>
+                <button class="filter-pill" data-type="Update">General Updates</button>
+            </div>
+        </section>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <!-- Loading Skeleton Grid -->
+            <div class="skeleton-grid" id="skeleton-grid">
+                <!-- 6 skeleton cards -->
+                <div class="skeleton-card"></div>
+                <div class="skeleton-card"></div>
+                <div class="skeleton-card"></div>
+                <div class="skeleton-card"></div>
+                <div class="skeleton-card"></div>
+                <div class="skeleton-card"></div>
+            </div>
+
+            <!-- Empty State -->
+            <div class="empty-state" id="empty-state" style="display: none;">
+                <div class="empty-icon-wrapper">
+                    <i class="fa-solid fa-folder-open"></i>
+                </div>
+                <h3>No updates found</h3>
+                <p>Try refining your search keyword or selecting a different category filter.</p>
+                <button id="reset-filters-btn" class="btn btn-secondary">Reset Search & Filters</button>
+            </div>
+
+            <!-- Notes Grid -->
+            <div class="notes-grid" id="notes-grid" style="display: none;">
+                <!-- Cards injected via JavaScript -->
+            </div>
+        </main>
+
+        <!-- App Footer -->
+        <footer class="app-footer">
+            <p>© 2026 BigQuery Release Pulse. Designed for Google Cloud professionals.</p>
+            <p>Source Feed: <a href="https://docs.cloud.google.com/feeds/bigquery-release-notes.xml" target="_blank" rel="noopener noreferrer">GCP Feed XML</a></p>
+        </footer>
+    </div>
+
+    <!-- Tweet Builder Modal -->
+    <div class="modal-backdrop" id="tweet-modal" style="display: none;">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3><i class="fa-brands fa-x-twitter"></i> Share Update on X</h3>
+                <button id="close-modal-btn" class="close-modal-btn" aria-label="Close modal">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            
+            <div class="modal-body">
+                <!-- Preview Area -->
+                <label class="modal-label">Compose your post:</label>
+                <div class="tweet-input-wrapper">
+                    <textarea id="tweet-textarea" rows="5" maxlength="280" placeholder="What's happening?"></textarea>
+                    
+                    <div class="tweet-textarea-footer">
+                        <div class="char-count-container">
+                            <svg class="progress-ring" width="24" height="24">
+                                <circle class="progress-ring-bg" stroke="rgba(255,255,255,0.1)" stroke-width="2" fill="transparent" r="10" cx="12" cy="12"/>
+                                <circle id="progress-ring-bar" class="progress-ring-bar" stroke="#3b82f6" stroke-width="2" fill="transparent" r="10" cx="12" cy="12"/>
+                            </svg>
+                            <span id="char-count">280</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Live Card Preview -->
+                <label class="modal-label">Post Preview:</label>
+                <div class="x-card-preview">
+                    <div class="x-avatar">
+                        <i class="fa-solid fa-bolt"></i>
+                    </div>
+                    <div class="x-content">
+                        <div class="x-user-info">
+                            <span class="x-name">BigQuery Pulse</span>
+                            <span class="x-handle">@BigQueryPulse</span>
+                        </div>
+                        <div class="x-tweet-text" id="tweet-preview-text">
+                            Loading preview...
+                        </div>
+                        <div class="x-link-card">
+                            <div class="x-link-domain">cloud.google.com</div>
+                            <div class="x-link-title">BigQuery Release Notes</div>
+                            <div class="x-link-desc">Official Google Cloud Platform release documentation for BigQuery.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button id="copy-tweet-btn" class="btn btn-secondary">
+                    <i class="fa-regular fa-copy"></i> Copy Text
+                </button>
+                <button id="publish-tweet-btn" class="btn btn-primary">
+                    <i class="fa-brands fa-x-twitter"></i> Share on X
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div class="toast-container" id="toast-container"></div>
+
+    <!-- JavaScript -->
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>
