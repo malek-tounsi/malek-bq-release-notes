@@ -11,7 +11,8 @@ An elegant, real-time portal built with Python Flask and plain vanilla HTML, JS,
 *   **High-End Glassmorphic UI**: A dark mode interface featuring neon ambient glows, backdrop filters, and micro-animations.
 *   **Live Tweet Composer & Mockup**: Allows users to customize update text, track character limits with an interactive progress ring, view a live-updating mockup of how their post will appear on X, and share it with a single click.
 *   **Local Search & Category Filters**: Responsive client-side filtering by keywords, dates, or update categories.
-*   **Utility Actions**: Copy update text with a single click, supported by a slide-in toast notification system.
+*   **Export Current View to CSV**: Dynamic CSV compiler that bundles the currently filtered, searched, and active release notes directly to a download-ready file.
+*   **Formatted Copy-to-Clipboard**: Enhanced card-copy action that formats date, update type, description, and source link into a structured clipboard string.
 *   **UX Enhancements**: Integrated loading skeleton cards for smooth loading transitions and a fully responsive mobile layout.
 
 ---
